@@ -1,26 +1,88 @@
-import requests, csv, threading, time, sys
-from discord_webhook import DiscordWebhook, DiscordEmbed
+import requests, csv, threading, time, sys, random, logging, re, os
+from discord_webhook import DiscordWebhook
+from colorama import init, Fore
+
+logging.basicConfig(level=logging.INFO, format=Fore.WHITE + '[' + '%(asctime)s' + ']' + ' %(message)s',
+                    datefmt='%d-%m-%Y %H:%M:%S')
+init(autoreset=True)
 class Auto():
     def __init__(self, email, sektor, qty):
         self.email = email
         self.sektor = sektor
         self.qty = qty
 
+    def changeProxy(self):
+        while True:
+            try:
+                with open('proxies.txt', 'r') as proxies_file:
+                    proxy_raw = random.choice(proxies_file.read().split('\n'))
+                    break
+
+            except:
+                logging.info(f'''{Fore.RED}COULD NOT READ PROXIES...''')
+                time.sleep(5)
+                sys.exit()
+
+        try:
+            proxy_parts = proxy_raw.split(':')
+            ip, port, user, password = proxy_parts[0], proxy_parts[1], proxy_parts[2], proxy_parts[3]
+            proxy = {'http': f'http://{user}:{password}@{ip}:{port}', 'https': f'http://{user}:{password}@{ip}:{port}'}
+
+        except:
+            proxy = {'http': 'http://' + str(proxy_raw), 'https': 'http://' + str(proxy_raw)}
+
+        return proxy
+
     def cart(self):
-        self.performanceId = "-2147476343"
+
+        b = os.path.getsize('proxies.txt')
+        if b == 0:
+            self.useProxy = False
+        else:
+            self.useProxy = True
+
+        if self.useProxy == True:
+            proxies = Auto.changeProxy(self)
+
+            self.r.proxies = proxies
+
+        threadname = threading.current_thread().name
+        threadname = str(threadname).replace('Thread-', 'TASK ')
+        result = re.sub(r'\(.*?\)', '', threadname).strip()
+
+        self.thread = f"""TICKETPORTAL - {result} - """
+
+        logging.info(f'''{Fore.YELLOW}{self.thread}Starting task...''')
+
+        self.headers = {
+            "Host": "www.ticketportal.cz",
+            "Origin": "https://www.ticketportal.cz",
+            "referer": "https://www.ticketportal.cz/Basket",
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
+        }
+
+        self.performanceId = "405549"
 
         self.r = requests.Session()
 
         basket2 = True
 
+        if "RANDOM" not in self.sektor:
+            self.url = f"https://www.ticketportal.cz/Event/SetNSeats/{self.performanceId}/{self.qty}?idsektor={self.sektor}"
+        else:
+            self.url = f"https://www.ticketportal.cz/Event/SetNSeats/{self.performanceId}/{self.qty}"
+
         while basket2:
 
             try:
-                carts = self.r.get(f"https://www.ticketportal.cz/Event/SetNSeats/{self.performanceId}/{self.qty}?idsektor={self.sektor}&detail=true").json()
+                carts = self.r.get(self.url, headers=self.headers).json()
+                self.basket = carts["ReturnedObject"]["NumberOfBasket"]
             except:
+                print("ERROR")
+                time.sleep(3)
                 Auto.cart(self)
 
-            self.basket = carts["ReturnedObject"]["NumberOfBasket"]
+
 
             if self.basket == 0:
                 print("Not instock. Retrying")
@@ -38,12 +100,6 @@ class Auto():
 
     def checkout(self):
 
-        headers = {
-            "Host": "www.ticketportal.cz",
-            "Origin": "https://www.ticketportal.cz",
-            "referer": "https://www.ticketportal.cz/Basket",
-            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
-        }
         data = {
             "AkciaADD": "",
             f"typ_p_{self.jineID}": "1",
