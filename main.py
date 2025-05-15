@@ -36,6 +36,8 @@ class Auto():
 
     def cart(self):
 
+        self.r = requests.Session()
+
         b = os.path.getsize('proxies.txt')
         if b == 0:
             self.useProxy = False
@@ -62,8 +64,6 @@ class Auto():
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
         }
 
-        self.r = requests.Session()
-
         basket2 = True
 
         if "RANDOM" not in self.sektor:
@@ -77,16 +77,15 @@ class Auto():
                 carts = self.r.get(self.url, headers=self.headers).json()
                 self.basket = carts["ReturnedObject"]["NumberOfBasket"]
             except:
-                print("ERROR")
+                logging.info(f'''{Fore.RED}{self.thread}ERROR HIT, retrying...''')
                 time.sleep(3)
-                Auto.changeProxy(self)
                 Auto.cart(self)
 
 
 
             if self.basket == 0:
-                print("Not instock. Retrying")
-                time.sleep(0.5)
+                logging.info(f'''{Fore.YELLOW}{self.thread}NOT INSTOCK, retrying...''')
+                time.sleep(3)
                 pass
             else:
                 self.eventName = carts["ReturnedObject"]["Basket"]["Performances_info"][self.koncert]["Event_name"]
@@ -163,7 +162,7 @@ if __name__ == "__main__":
         with open('tasks.csv', "r", encoding='UTF-8', newline='') as csvfile:
             tasks = csv.DictReader(csvfile, delimiter=',')
             for line in tasks:
-                pico = Auto(email=line['EMAIL'], sektor=line["SEKTOR"], qty=line["QTY"])
+                pico = Auto(email=line['EMAIL'], sektor=line["SEKTOR"], koncert=line['KONCERT'], qty=line["QTY"])
                 t = threading.Thread(target=pico.cart).start()
     except:
         print('''Check your tasks.csv, exiting...''')
