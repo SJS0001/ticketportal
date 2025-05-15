@@ -1,15 +1,16 @@
 import requests, csv, threading, time, sys, random, logging, re, os
-from discord_webhook import DiscordWebhook
+from discord_webhook import DiscordWebhook,DiscordEmbed
 from colorama import init, Fore
 
 logging.basicConfig(level=logging.INFO, format=Fore.WHITE + '[' + '%(asctime)s' + ']' + ' %(message)s',
                     datefmt='%d-%m-%Y %H:%M:%S')
 init(autoreset=True)
 class Auto():
-    def __init__(self, email, sektor, qty):
+    def __init__(self, email, sektor, qty, koncert):
         self.email = email
         self.sektor = sektor
         self.qty = qty
+        self.koncert = koncert
 
     def changeProxy(self):
         while True:
@@ -61,16 +62,14 @@ class Auto():
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
         }
 
-        self.performanceId = "405549"
-
         self.r = requests.Session()
 
         basket2 = True
 
         if "RANDOM" not in self.sektor:
-            self.url = f"https://www.ticketportal.cz/Event/SetNSeats/{self.performanceId}/{self.qty}?idsektor={self.sektor}"
+            self.url = f"https://www.ticketportal.cz/Event/SetNSeats/{self.koncert}/{self.qty}?idsektor={self.sektor}"
         else:
-            self.url = f"https://www.ticketportal.cz/Event/SetNSeats/{self.performanceId}/{self.qty}"
+            self.url = f"https://www.ticketportal.cz/Event/SetNSeats/{self.koncert}/{self.qty}"
 
         while basket2:
 
@@ -80,6 +79,7 @@ class Auto():
             except:
                 print("ERROR")
                 time.sleep(3)
+                Auto.changeProxy(self)
                 Auto.cart(self)
 
 
@@ -89,10 +89,10 @@ class Auto():
                 time.sleep(0.5)
                 pass
             else:
-                self.eventName = carts["ReturnedObject"]["Basket"]["Performances_info"][self.performanceId]["Event_name"]
-                self.sektorName = carts["ReturnedObject"]["Basket"]["Performance_count"][self.performanceId][0]["Sektor"]
+                self.eventName = carts["ReturnedObject"]["Basket"]["Performances_info"][self.koncert]["Event_name"]
+                self.sektorName = carts["ReturnedObject"]["Basket"]["Performance_count"][self.koncert][0]["Sektor"]
 
-                jineID = carts["ReturnedObject"]["Basket"]["Performances_info"][self.performanceId]["ID_Podujatie"]
+                jineID = carts["ReturnedObject"]["Basket"]["Performances_info"][self.koncert]["ID_Podujatie"]
                 self.jineID = str(jineID)
                 break
 
@@ -120,7 +120,7 @@ class Auto():
             "s_garancia": "0.00",
             "termsAccept_TicketportalTermsAccept": True,
             "termsAccept_O2TermsAcceptRequired": True,
-            f"termsAccept_{self.performanceId}": True,
+            f"termsAccept_{self.koncert}": True,
             "createPayment": ""
         }
         try:
@@ -138,9 +138,9 @@ class Auto():
 
     def saveCSV(self):
         with open("success.csv", "a", newline="") as cfile:
-            fieldnames = ["LINK", "SEKTOR", "EMAIL", "QTY"]
+            fieldnames = ["LINK", "SEKTOR", "EMAIL", "KONCERT", "QTY"]
             write = csv.DictWriter(cfile, delimiter=',', fieldnames=fieldnames)
-            write.writerow({'LINK': self.url, 'SEKTOR': self.sektorName, "EMAIL": self.email, "QTY": self.basket})
+            write.writerow({'LINK': self.url, 'SEKTOR': self.sektorName, "EMAIL": self.email, "KONCERT": self.koncert, "QTY": self.basket})
 
     def webhook(self):
         try:
