@@ -2,8 +2,6 @@
 
 Tento projekt je Python skript vytvořený jako experiment s automatizací HTTP komunikace a práci se sessions. Slouží k monitorování dostupnosti vstupenek na portálu **TicketPortal** a pokusu o jejich automatickou rezervaci při uvolnění míst.
 
-Primárním cílem projektu bylo procvičit práci s přímou komunikací se serverem bez použití prohlížeče, pochopit strukturu requestů/responsí a vyzkoušet automatizaci procesu od kontroly dostupnosti až po vytvoření objednávky.
-
 ---
 
 # 🚀 Hlavní funkce
